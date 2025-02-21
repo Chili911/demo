@@ -1,0 +1,275 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+
+// defining functions add, jmpe,jmpu,prn,halt,put
+
+
+// declaration of register 
+int registers[5] = {0}; 
+int programCounter = 0; // keep track of the current command 
+
+// Function declaration for put 
+void putValueInRegister(int constantValue, int destReg);
+
+// Function definition for put command
+void putValueInRegister(int constantValue, int destReg) {
+    registers[destReg] = constantValue;  // Assign constantValue to destReg
+} 
+
+    // Function definition for jmpe command
+void jmpe(int reg1, int reg2, int lineNumber) {
+    if (registers[reg1] == registers[reg2]) {  // Compare contents of reg1 and reg2 if they are equal
+         halt();  // break 
+    } else {
+        // move to the next command 
+        programCounter++; 
+    }
+}
+
+
+// declare of prn comand
+void prn(int regNumber); 
+
+// Function definition for print command (prn)
+void prn(int regNumber) {
+    printf("Contents of register r%d: %d\n", regNumber, registers[regNumber]);
+}
+
+// Function declaration for add command
+void add(int destReg, int operandReg) {
+    // Add the contents of operandReg to destReg
+    registers[destReg] += registers[operandReg];
+}
+
+
+void jmpu(int lineNumber); // declare of jmpu comand same as normal jmpe 
+
+
+// Halt function definition
+void halt() {
+    exit(0); // Terminate the program with the specified exit code (0 for success)
+}
+
+
+
+
+int main() {
+    // Step 1: create a text file and write to it
+    FILE *fp_write;
+    fp_write = fopen("C:project2..txt", "w");
+    
+    // Check if file opened successfully
+    if (fp_write == NULL) {
+        printf("Error opening file for writing.\n");
+        return 1; // indicate an error
+    }
+
+    // Write something to the file
+    fprintf(fp_write, "Welceome this is SimLin.\n");
+
+    // Close the file
+    fclose(fp_write);
+
+    // Step 2: read the text file
+    FILE *fp_read;
+    fp_read = fopen("C:project2..txt", "r");
+
+    // Check if file opened successfully
+    if (fp_read == NULL) {
+        printf("Error opening file for reading.\n");
+        return 1; // indicate an error
+    }
+    
+    // Read and print the content of the file
+    char ch;
+    while ((ch = fgetc(fp_read)) != EOF) {
+        printf("%c", ch);
+    }
+
+
+    // Close the file
+    fclose(fp_read);
+    
+   putValueInRegister(1, 5); // Assign 1 to r5 
+   putValueInRegister(0,1);  // Assign 0 to r1
+   putValueInRegister(10,2); //Assign 10 to r2
+
+      
+    registers[1] = 0; // Contents of r1
+    registers[2] = 10; // Contents of r2
+   
+    // Perform jmpe operation
+    jmpe(1, 2, 8); // If r1 and r2 are equal, jmp to line 8 and halt
+
+
+prn(1); 
+
+
+
+
+
+    
+    jmpu(4);// Continue to linne 4 to check if r1 and r2 contents are equal
+    
+    
+
+    return 0;#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+int strToInt(char *str, int index) {
+    int number = str[index] - '0';
+    index++;
+    while (1) {
+        if (str[index] >= 48 && str[index] <= 57) {
+            number = number * 10;
+            number += str[index] - '0';
+            index++;
+        } else {
+            break;
+        }
+    }
+    return number;
+}
+
+void executeAdd(int registers[], char *instruction) {
+    int i = 2;
+    while (instruction[i] < 48 || instruction[i] > 57) {
+        i++;
+    }
+    int source = strToInt(instruction, i);  // s
+    while (instruction[i] != 'r') {
+        i++;
+    }
+    i++;
+    int destination = strToInt(instruction, i); // des
+    registers[destination] += registers[source];
+}
+
+void executeHalt() {
+    printf("halt");
+    exit(EXIT_SUCCESS);
+}
+
+void executePrint(int registers[], char *instruction) {
+    int i = 3;
+    while (instruction[i] < 48 || instruction[i] > 57) {
+        i++;
+    }
+    int source = strToInt(instruction, i);
+    printf("%d\n", registers[source]);
+}
+
+void executePut(int registers[], char *instruction) {
+    int i = 2;
+    for (i = 2; instruction[i] < 48 || instruction[i] > 57; i++) {
+    }
+    int source = strToInt(instruction, i);
+
+    for (i = i + 1; instruction[i] != 'r'; i++) {
+    }
+    i++;
+    int destination = strToInt(instruction, i);
+    registers[destination] = source;
+}
+
+void executeJumpEqual(int registers[], char *instruction, int *PC) {
+    int i = 3;
+    while (instruction[i] != 'r') {
+        i++;
+    }
+    i++;
+    int source1 = strToInt(instruction, i);
+    while (instruction[i] != 'r') {
+        i++;
+    }
+    i++;
+    int source2 = strToInt(instruction, i);
+    while (instruction[i] != ',') {
+        i++;
+    }
+    while (instruction[i] < 48 || instruction[i] > 57) {
+        i++;
+    }
+
+    int lineNum = strToInt(instruction, i);
+    if (registers[source1] == registers[source2]) {
+        *PC = lineNum - 1;
+    }
+}
+
+void executeJumpUnconditional(char *instruction, int *PC) {
+    int i = 2;
+    while (instruction[i] < 48 || instruction[i] > 57) {
+        i++;
+    }
+    int lineNum = strToInt(instruction, i);
+    *PC = lineNum - 1;
+}
+
+int main() {
+    FILE *fin = fopen("input.txt", "r");
+    if (fin == NULL) {
+        printf("file is invalid\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char inputLine[256];
+    int totalInputLines = 0;
+
+    while (!feof(fin)) {
+        fgets(inputLine, 256, fin);
+        totalInputLines++;
+    }
+
+    char inputLines[totalInputLines + 1][256];
+    fclose(fin);
+
+    fin = fopen("input.txt", "r");
+    for (int i = 1; !feof(fin); i++) {
+        fgets(inputLines[i], 256, fin);
+    }
+    fclose(fin);
+
+    printf("input program\n");
+    for (int i = 1; i < totalInputLines; i++) {
+        printf("%d. %s\n", i, inputLines[i]);
+    }
+
+    int PC = 1;
+    int registers[33];
+
+    for (int i = 0; i < 33; i++) {
+        registers[i] = 0;
+    }
+
+    while (1) {
+        char *instruction = inputLines[PC];
+
+        if (instruction[0] == 'a') {
+            executeAdd(registers, instruction);
+        } else if (instruction[0] == 'h') {
+            executeHalt();
+        } else if (instruction[0] == 'p') {
+            if (instruction[1] == 'r') {
+                executePrint(registers, instruction);
+            } else {
+                executePut(registers, instruction);
+            }
+        } else if (instruction[0] == 'j') {
+            if (instruction[3] == 'e') {
+                executeJumpEqual(registers, instruction, &PC);
+            } else {
+                executeJumpUnconditional(instruction, &PC);
+            }
+        }
+
+        PC++;
+    }
+
+    return 0;
+}
+
+
+
